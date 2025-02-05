@@ -1,0 +1,6 @@
+bcrypt
+psycopg2
+pandas
+matplotlib
+pyfiglet
+termcolor

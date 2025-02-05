@@ -32,27 +32,17 @@ def main():
             print("Invalid choice. Please enter 1, 2, or 3.")
     
     # Function to handle user interactions after logging in
-    def users_logged_in():
+    def users_logged_in(user_id):
         while True:
             print("\n1. Add Expense\n2. Delete Expense\n3. Update Expense\n4. View Reports\n5. Generate Reports\n6. History\n7. Categories\n8. Exit")
             option = input("Choose an option: ")
 
             if option == "1":
-                amount = float(input("Enter amount: "))
-                category = input("Enter category: ")
-                description = input("Enter description: ")
-                date = input("Enter date (YYYY-MM-DD): ")
-                expense_manager.add_expense(amount, category, description, date)
+                expense_manager.add_expense(user_id)
             elif option == "2":
-                expense_id = int(input("Enter expense ID to delete: "))
-                expense_manager.delete_expense(expense_id)
+                expense_manager.delete_expense(user_id)
             elif option == "3":
-                expense_id = int(input("Enter expense ID to update: "))
-                new_amount = float(input("Enter new amount: "))
-                new_category = input("Enter new category: ")
-                new_description = input("Enter new description: ")
-                new_date = input("Enter new date (YYYY-MM-DD): ")
-                expense_manager.update_expense(expense_id, new_amount, new_category, new_description, new_date)
+                expense_manager.update_expense(user_id)
             elif option == "4":
                 month = int(input("Enter month: "))
                 year = int(input("Enter year: "))
@@ -72,19 +62,23 @@ def main():
 
     # Function to display home options
     def home_options():
-        options = print("\n1. Signup\n2. Login\n3. Exit")
+        print("\n1. Signup\n2. Login\n3. Exit")
         choice = get_valid_choice()
         
         if choice == "1":
             if auth.signup():
-                users_logged_in()
+                user_id = auth.login()  # ✅ Get user_id after signup
+                if user_id:
+                    users_logged_in(user_id)  # ✅ Pass user_id
         elif choice == "2":
-            if auth.login():
-                users_logged_in()
+            user_id = auth.login()  # ✅ Get user_id after login
+            if user_id:
+                users_logged_in(user_id)  # ✅ Pass user_id
         elif choice == "3":
             display_goodbye()
         else:
             print("Invalid choice.")
+
 
     # Main program starts here
     display_welcome()

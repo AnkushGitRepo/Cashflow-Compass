@@ -47,23 +47,25 @@ class Authentication:
     
     # Add the login method here
     def login(self):
-        username = input("\nEnter username: ")
+        """Login user and return user_id if successful."""
+        username = input("Enter username: ").strip()
         password = getpass.getpass("Enter password: ")
 
         try:
             with self.conn.cursor() as cur:
-                cur.execute("SELECT password FROM users WHERE username = %s", (username,))
+                cur.execute("SELECT id, password FROM users WHERE username = %s", (username,))
                 user = cur.fetchone()
 
-                if user and self.verify_password(password, user[0]):
+                if user and self.verify_password(password, user[1]):  # ✅ Verify hashed password
                     print("Login successful!")
-                    return True
+                    return user[0]  # ✅ Return user_id
                 else:
                     print("Invalid username or password.")
-                    return False
+                    return None
         except Exception as e:
             print(f"Error: {e}")
-            return False
+            return None
+
         
     def view_history(self):
         """Retrieve and display user action logs in a formatted table."""

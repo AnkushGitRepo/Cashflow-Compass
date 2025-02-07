@@ -44,11 +44,9 @@ def main():
             elif option == "3":
                 expense_manager.update_expense(user_id)
             elif option == "4":
-                month = int(input("Enter month: "))
-                year = int(input("Enter year: "))
-                report_generator.view_reports(month, year)
+                report_generator.view_reports(user_id)
             elif option == "5":
-                report_generator.generate_report()
+                report_generator.generate_pdf_report(user_id)
             elif option == "6":
                 auth.view_history()
             elif option == "7":

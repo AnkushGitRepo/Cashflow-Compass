@@ -37,13 +37,10 @@ This project is built with **Python**, using **PostgreSQL** for data persistence
 expense_tracker/
 │── main.py
 │── requirements.txt
-|__ db_schema.sql
-|__ db_dummy.sql
 |__ README.md
 │
 ├── config/
 │   ├── db_config.py
-│   ├── settings.py
 │
 ├── database/
 │   ├── db_connection.py
@@ -60,10 +57,8 @@ expense_tracker/
 │
 ├── reports/
 │   ├── report_generator.py
-│   ├── visualizations.py
 │
 ├── utils/
-│   ├── input_validation.py
 │   ├── pdf_generator.py
 │   ├── logger.py
 ```
@@ -100,8 +95,8 @@ pip install -r requirements.txt
     ```
 - **3. Update Database Configuration in `config/db_config.py`:**
     ```python
-    DB_NAME = "expense_tracker"
-    DB_USER = "your_username"
+    DB_NAME = "cashflow_compass"
+    DB_USER = "postgres"
     DB_PASSWORD = "your_password"
     DB_HOST = "localhost"
     DB_PORT = "5432"

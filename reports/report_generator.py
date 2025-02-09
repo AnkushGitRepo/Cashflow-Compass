@@ -17,36 +17,69 @@ class ReportGenerator:
         pdf_generator.generate_pdf_report(user_id)
 
     def view_reports(self, user_id):
-        """Display report options and generate the selected report."""
-        print("\n--- View Reports ---")
-        print("1. Daily Report")
-        print("2. Weekly Report")
-        print("3. Monthly Report")
-        print("4. Yearly Report")
-        print("5. Comparison Report (Current vs. Previous Year)")
-        print("6. Cancel")
+        """Display report options and generate the selected report with error handling."""
+        while True:
+            print("\n--- View Reports ---")
+            print("1. Daily Report")
+            print("2. Weekly Report")
+            print("3. Monthly Report")
+            print("4. Yearly Report")
+            print("5. Comparison Report (Current vs. Previous Year)")
+            print("6. Cancel")
 
-        choice = input("Choose an option: ").strip()
+            choice = input("Choose an option: ").strip()
 
-        if choice == "1":
-            date_str = input("Enter the date (YYYY-MM-DD): ").strip()
-            self.generate_daily_report(user_id, date_str)
-        elif choice == "2":
-            start_date = input("Enter the start date (YYYY-MM-DD): ").strip()
-            self.generate_weekly_report(user_id, start_date)
-        elif choice == "3":
-            month = input("Enter month (1-12): ").strip()
-            year = input("Enter year (YYYY): ").strip()
-            self.generate_monthly_report(user_id, month, year)
-        elif choice == "4":
-            year = input("Enter year (YYYY): ").strip()
-            self.generate_yearly_report(user_id, year)
-        elif choice == "5":
-            self.generate_comparison_report(user_id)
-        elif choice == "6":
-            return
-        else:
-            print("Invalid choice.")
+            if choice == "1":
+                date_str = self.get_valid_date("Enter the date (YYYY-MM-DD) (Press Enter for today): ")
+                self.generate_daily_report(user_id, date_str)
+            elif choice == "2":
+                start_date = self.get_valid_date("Enter the start date (YYYY-MM-DD) (Press Enter for today): ")
+                self.generate_weekly_report(user_id, start_date)
+            elif choice == "3":
+                month = self.get_valid_month("Enter month (1-12): ")
+                year = self.get_valid_year("Enter year (YYYY): ")
+                self.generate_monthly_report(user_id, month, year)
+            elif choice == "4":
+                year = self.get_valid_year("Enter year (YYYY): ")
+                self.generate_yearly_report(user_id, year)
+            elif choice == "5":
+                self.generate_comparison_report(user_id)
+            elif choice == "6":
+                print("Returning to main menu...")
+                return
+            else:
+                print("⚠️ Invalid choice. Please select a valid option (1-6).")
+
+    def get_valid_date(self, prompt):
+        """Prompt user for a valid date, allowing Enter for today's date."""
+        while True:
+            date_str = input(prompt).strip()
+            if not date_str:
+                return datetime.today().strftime('%Y-%m-%d')  # Default to today
+            try:
+                datetime.strptime(date_str, "%Y-%m-%d")  # Validate format
+                return date_str
+            except ValueError:
+                print("⚠️ Invalid date format. Please enter in YYYY-MM-DD format.")
+
+    def get_valid_month(self, prompt):
+        """Prompt user for a valid month (1-12)."""
+        while True:
+            month_str = input(prompt).strip()
+            if month_str.isdigit():
+                month = int(month_str)
+                if 1 <= month <= 12:
+                    return month
+            print("⚠️ Invalid month. Please enter a number between 1 and 12.")
+
+    def get_valid_year(self, prompt):
+        """Prompt user for a valid year (four-digit)."""
+        while True:
+            year_str = input(prompt).strip()
+            if year_str.isdigit() and len(year_str) == 4:
+                return int(year_str)
+            print("⚠️ Invalid year. Please enter a valid four-digit year.")
+
 
     def fetch_expense_data(self, user_id, query, params):
         """Fetch expense data and return a DataFrame."""
@@ -75,6 +108,7 @@ class ReportGenerator:
         axes[1].set_ylabel("Total Spent")
         axes[1].set_title(f"{title} - Bar Chart")
         axes[1].tick_params(axis='x', rotation=45)
+        axes[1].grid(axis='y')
 
         plt.tight_layout()
         plt.show()
@@ -180,5 +214,6 @@ class ReportGenerator:
             ax.set_xlabel("Month")
             ax.set_ylabel("Total Spent")
             ax.set_title(f"Comparison Report: {previous_year} vs {current_year}")
+            ax.grid(axis='y')
             ax.tick_params(axis='x', rotation=45)
             plt.show()

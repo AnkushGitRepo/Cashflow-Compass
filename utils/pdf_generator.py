@@ -2,7 +2,8 @@ from fpdf import FPDF
 import matplotlib.pyplot as plt
 import pandas as pd
 import psycopg2
-from datetime import datetime
+from datetime import datetime, timedelta
+import numpy as np
 from config.db_config import get_db_connection
 from utils.logger import log_user_action
 
@@ -13,12 +14,13 @@ class PDFGenerator(FPDF):
         super().__init__()
         self.conn = get_db_connection()
 
-    def fetch_expense_data(self, user_id):
-        """Fetch all expense data for the given user."""
+    def fetch_expense_data(self, user_id, months=6):
+        """Fetch all expense data for the given user over the last `months` months."""
         query = """
-            SELECT e.id, c.category_name, e.amount, e.description, e.date
+            SELECT e.id, c.category_name, e.amount, e.description, e.date, u.username
             FROM expenses e
             JOIN categories c ON e.category_id = c.id
+            JOIN users u ON e.user_id = u.id
             WHERE e.user_id = %s
             ORDER BY e.date ASC;
         """
@@ -29,58 +31,69 @@ class PDFGenerator(FPDF):
             return None
 
     def generate_expense_graphs(self, df, user_id):
-        """Generate and save full-page expense graphs."""
+        """Generate and save expense trend graph, category-wise donut chart, and summary table."""
         if df.empty:
             return None, None, None
         
         df["date"] = pd.to_datetime(df["date"])
-        df["month"] = df["date"].dt.to_period("M")
+        df["year"] = df["date"].dt.year
 
-        # Group data by category and month
-        category_df = df.groupby(["month", "category_name"])["amount"].sum().unstack(fill_value=0)
+        # Limit to last 5 years
+        latest_year = df["year"].max()
+        earliest_year = latest_year - 4  # Last 5 years
+        df = df[df["year"] >= earliest_year]
 
-        # Expense Trend Graph (Full Page)
+        # Expense Trend Over the Past 5 Years (Line Chart)
         trend_chart_path = f"expense_trend_chart_{user_id}.png"
-        plt.figure(figsize=(16, 12))  # ✅ Full Page
-        category_df.plot(kind="line", marker="o", figsize=(16, 10))
-        plt.xlabel("Month", fontsize=16)
-        plt.ylabel("Total Spent", fontsize=16)
-        plt.title("Expense Trends Over Time (Category-wise)", fontsize=18)
-        plt.xticks(rotation=45, fontsize=14)
-        plt.legend(title="Categories", loc="upper left", fontsize=14)
+        yearly_df = df.groupby("year")["amount"].sum()
+        plt.figure(figsize=(10, 5))
+        plt.plot(yearly_df.index, yearly_df.values, marker="o", linestyle="--", color="b")
+        plt.xlabel("Year", fontsize=14)
+        plt.ylabel("Total Spent", fontsize=14)
+        plt.title("Expense Trend Over the Past 5 Years", fontsize=16)
         plt.grid(True)
         plt.savefig(trend_chart_path, bbox_inches="tight", dpi=300)
         plt.close()
 
-        # Category-wise Spending Pie Chart (Full Page)
+        # Category-Wise Spending Over the Past 6 Months (Donut Chart with Legend)
         pie_chart_path = f"expense_pie_chart_{user_id}.png"
         category_totals = df.groupby("category_name")["amount"].sum()
-        plt.figure(figsize=(12, 12))  # ✅ Full Page Pie Chart
-        plt.pie(category_totals, labels=category_totals.index, autopct="%1.1f%%", startangle=140)
-        plt.title("Category-wise Spending", fontsize=18)
+        plt.figure(figsize=(8, 8))
+        wedges, texts, autotexts = plt.pie(
+            category_totals, labels=category_totals.index, autopct="%1.1f%%",
+            startangle=140, wedgeprops={"edgecolor": "white"}
+        )
+        for text in texts + autotexts:
+            text.set_fontsize(12)  # Improve text visibility
+        plt.legend(title="Categories", loc="best", fontsize=12)
+        plt.title("Category Wise Spending Over The Years", fontsize=16)
         plt.savefig(pie_chart_path, bbox_inches="tight", dpi=300)
         plt.close()
 
-        # Total Spending by Category Bar Chart (Full Page)
+        # Total Spending by Category Bar Chart (Colored Bars & Grid)
         bar_chart_path = f"expense_bar_chart_{user_id}.png"
-        plt.figure(figsize=(14, 10))  # ✅ Full Page Bar Chart
-        plt.bar(category_totals.index, category_totals, color="blue")
-        plt.xlabel("Category", fontsize=16)
-        plt.ylabel("Total Spent", fontsize=16)
-        plt.xticks(rotation=45, fontsize=14)
-        plt.title("Total Spending by Category", fontsize=18)
+        colors = plt.cm.viridis(np.linspace(0, 1, len(category_totals)))  # Generate different colors
+        plt.figure(figsize=(10, 6))
+        plt.bar(category_totals.index, category_totals, color=colors)
+        plt.xlabel("Category", fontsize=14)
+        plt.ylabel("Total Spent", fontsize=14)
+        plt.xticks(rotation=45, fontsize=12)
+        plt.title("Total Spending by Category", fontsize=16)
+        plt.grid(axis="y", linestyle="--", alpha=0.7)  # Add a grid for readability
         plt.savefig(bar_chart_path, bbox_inches="tight", dpi=300)
         plt.close()
 
         return trend_chart_path, pie_chart_path, bar_chart_path
 
     def generate_pdf_report(self, user_id):
-        """Generate a detailed expense report in PDF format with full-page graphs."""
+        """Generate a detailed expense report in PDF format."""
         df = self.fetch_expense_data(user_id)
         if df is None or df.empty:
             print("No expenses found to generate a report.")
             return
-        
+
+        username = df["username"].iloc[0]  # Get username from the dataset
+
         # Generate Expense Graphs
         trend_chart, pie_chart, bar_chart = self.generate_expense_graphs(df, user_id)
 
@@ -88,9 +101,9 @@ class PDFGenerator(FPDF):
         self.set_auto_page_break(auto=True, margin=15)
         self.add_page()
 
-        # Title
+        # Title with Username
         self.set_font("Arial", "B", 18)
-        self.cell(200, 15, f"Expense Report for User {user_id}", ln=True, align="C")
+        self.cell(200, 15, f"Expense Report for {username}", ln=True, align="C")
         self.ln(10)
 
         # Expense Table Header
@@ -115,27 +128,21 @@ class PDFGenerator(FPDF):
         # Add Full Page Charts
         if trend_chart:
             self.add_page()
-            self.set_font("Arial", "B", 14)
-            self.cell(200, 15, "Expense Trends Over Time", ln=True, align="C")
-            self.ln(5)
-            self.image(trend_chart, x=10, w=190)  # ✅ Full Page
+            self.cell(200, 15, "Expense Trend Over the Past 5 Years", ln=True, align="C")
+            self.image(trend_chart, x=10, w=190)  
 
         if pie_chart:
             self.add_page()
-            self.set_font("Arial", "B", 14)
-            self.cell(200, 15, "Category-wise Spending", ln=True, align="C")
-            self.ln(5)
-            self.image(pie_chart, x=10, w=190)  # ✅ Full Page
+            self.cell(200, 15, "Category Wise Spending Over The Years", ln=True, align="C")
+            self.image(pie_chart, x=10, w=190)  
 
         if bar_chart:
             self.add_page()
-            self.set_font("Arial", "B", 14)
             self.cell(200, 15, "Total Spending by Category", ln=True, align="C")
-            self.ln(5)
-            self.image(bar_chart, x=10, w=190)  # ✅ Full Page
+            self.image(bar_chart, x=10, w=190)  
 
         # Save PDF
-        report_path = f"Expense_Report_User_{user_id}.pdf"
+        report_path = f"Expense_Report_{username}.pdf"
         self.output(report_path)
         log_user_action(user_id, f"Generated expense report: {report_path}")
         print(f"Expense report generated: {report_path}")

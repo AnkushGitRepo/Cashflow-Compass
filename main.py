@@ -48,9 +48,9 @@ def main():
             elif option == "5":
                 report_generator.generate_pdf_report(user_id)
             elif option == "6":
-                auth.view_history()
+                auth.view_history(user_id)
             elif option == "7":
-                category_manager.manage_categories()  # ✅ New function for category management
+                category_manager.manage_categories(user_id)  # ✅ New function for category management
             elif option == "8":
                 home_options()
                 break
@@ -60,22 +60,26 @@ def main():
 
     # Function to display home options
     def home_options():
-        print("\n1. Signup\n2. Login\n3. Exit")
-        choice = get_valid_choice()
-        
-        if choice == "1":
-            if auth.signup():
-                user_id = auth.login()  # ✅ Get user_id after signup
-                if user_id:
-                    users_logged_in(user_id)  # ✅ Pass user_id
-        elif choice == "2":
-            user_id = auth.login()  # ✅ Get user_id after login
-            if user_id:
-                users_logged_in(user_id)  # ✅ Pass user_id
-        elif choice == "3":
-            display_goodbye()
-        else:
-            print("Invalid choice.")
+        while True:
+            print("\n1. Signup\n2. Login\n3. Exit")
+            choice = get_valid_choice()
+
+            if choice == "1":
+                user_id = auth.signup()
+                if user_id:  # ✅ If signup was successful, proceed
+                    users_logged_in(user_id)
+            elif choice == "2":
+                user_id = auth.login()
+                if user_id:  # ✅ If login was successful, proceed
+                    users_logged_in(user_id)
+            elif choice == "3":
+                display_goodbye()
+                exit(0)
+            else:
+                print("Invalid choice.")
+
+
+
 
 
     # Main program starts here

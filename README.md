@@ -69,8 +69,8 @@ expense_tracker/
 
 ### **1️⃣ Clone the Repository**
 ```sh
-git clone https://github.com/AnkushGitRepo/cli-expense-tracker.git
-cd cli-expense-tracker
+git clone https://github.com/AnkushGitRepo/Cashflow-Compass.git
+cd Cashflow-Compass
 ```
 
 ### **2️⃣ Create a Virtual Environment (`Recommended`)**

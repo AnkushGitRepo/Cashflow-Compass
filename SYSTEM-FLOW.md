@@ -171,6 +171,7 @@ expense_manager.update_expense()
 
 ## **FLow Chart**
 <img title="Flow of Program" alt="Alt text" src="/docs/flow.png">
+![Flow of Program](https://github.com/AnkushGitRepo/Cashflow-Compass/blob/main/docs/flow.png "Flow of Program")
 
 # **📌 Database Schema**
 ### **Users Table**

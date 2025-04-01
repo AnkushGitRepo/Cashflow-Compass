@@ -218,8 +218,6 @@ CREATE TABLE user_logs (
 3. Commit changes (git commit -m "Added feature XYZ").
 4. Push and submit a PR.
 
-## ✨ Acknowledgments
-Special thanks to contributors for helping improve this project. 🚀
 
 ---
 
